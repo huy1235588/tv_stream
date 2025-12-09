@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Stream - Xem TV Online</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .video-container {
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        #videoPlayer {
+            width: 100%;
+            max-height: 500px;
+            background: #000;
+            border-radius: 5px;
+        }
+        
+        .current-channel {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .quality-selector {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .quality-selector h3 {
+            margin-bottom: 10px;
+            color: #667eea;
+            font-size: 16px;
+        }
+        
+        .quality-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .quality-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .quality-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .quality-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .quality-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .channel-list {
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .channel-list h2 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        #channelContainer {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        
+        .channel-item {
+            width: 100%;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1;
+            background: #f8f9fa;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+            padding: 10px;
+            overflow: hidden;
+        }
+        
+        .channel-logo {
+            width: 280px;
+            height: 160px;
+            object-fit: contain;
+            background: white;
+            border-radius: 5px;
+            flex-shrink: 0;
+        }
+        
+        .channel-info {
+            display: none;
+        }
+        
+        .channel-item:hover {
+            background: #e9ecef;
+            transform: scale(1.05);
+        }
+        
+        .channel-item.active {
+            background: #667eea;
+            color: white;
+            border-color: #5568d3;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        @media (max-width: 768px) {
+            #channelContainer {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #channelContainer {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .channel-logo {
+                width: 60px;
+                height: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📺 TV Stream Online</h1>
+        
+        <div class="main-content">
+            <div class="video-container">
+                <video id="videoPlayer" controls autoplay>
+                    Trình duyệt của bạn không hỗ trợ video player
+                </video>
+                <div class="current-channel">
+                    <strong>Đang xem:</strong> <span id="currentChannel">Chọn một kênh để xem</span>
+                </div>
+                <div class="quality-selector" id="qualitySelector" style="display: none;">
+                    <h3>⚙️ Chất lượng video:</h3>
+                    <div class="quality-buttons" id="qualityButtons"></div>
+                </div>
+            </div>
+            
+            <div class="channel-list">
+                <h2>Danh sách kênh</h2>
+                <input type="text" class="search-box" id="searchBox" placeholder="🔍 Tìm kiếm kênh...">
+                <div id="channelContainer">
+                    <div class="loading">Đang tải danh sách kênh...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HLS.js for HLS stream support on old browsers -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12"></script>
+    
+    <script>
+        let channels = [];
+        let currentChannelId = null;
+        let currentQuality = null;
+        let currentHls = null;
+        
+        // Load channels from API
+        async function loadChannels() {
+            try {
+                const response = await fetch('/api/channels');
+                const data = await response.json();
+                
+                if (data.success) {
+                    channels = data.channels;
+                    renderChannels(channels);
+                } else {
+                    showError('Không thể tải danh sách kênh');
+                }
+            } catch (error) {
+                showError('Lỗi kết nối: ' + error.message);
+            }
+        }
+        
+        // Render channel list
+        function renderChannels(channelList) {
+            const container = document.getElementById('channelContainer');
+            
+            if (channelList.length === 0) {
+                container.innerHTML = '<div class="loading">Không tìm thấy kênh nào</div>';
+                return;
+            }
+            
+            container.innerHTML = channelList.map(channel => {
+                const qualityCount = Object.keys(channel.qualities).length;
+                const logoHtml = channel.logo 
+                    ? `<img src="${channel.logo}" alt="${channel.name}" class="channel-logo" onerror="this.style.display='none'">` 
+                    : '';
+                return `
+                    <div class="channel-item" data-id="${channel.id}" onclick="playChannel('${channel.id}')">
+                        ${logoHtml}
+                        <div class="channel-info">
+                            <div>${channel.name}</div>
+                            <small style="color: #888;">(${qualityCount} chất lượng)</small>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Render quality buttons
+        function renderQualityButtons(channel) {
+            const qualitySelector = document.getElementById('qualitySelector');
+            const qualityButtons = document.getElementById('qualityButtons');
+            
+            if (!channel.qualities || Object.keys(channel.qualities).length === 0) {
+                qualitySelector.style.display = 'none';
+                return;
+            }
+            
+            qualitySelector.style.display = 'block';
+            qualityButtons.innerHTML = '';
+            
+            // Create button for each quality
+            Object.keys(channel.qualities).forEach(quality => {
+                const btn = document.createElement('button');
+                btn.className = 'quality-btn';
+                btn.textContent = quality.toUpperCase();
+                btn.onclick = () => changeQuality(quality);
+                qualityButtons.appendChild(btn);
+            });
+            
+            // Auto-select best quality (first one, usually 720p)
+            const firstQuality = Object.keys(channel.qualities)[0];
+            currentQuality = firstQuality;
+            updateQualityButtonState();
+        }
+        
+        // Update quality button active state
+        function updateQualityButtonState() {
+            document.querySelectorAll('.quality-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase() === currentQuality) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+        
+        // Change quality
+        function changeQuality(quality) {
+            if (!currentChannelId) return;
+            
+            const channel = channels.find(c => c.id === currentChannelId);
+            if (!channel || !channel.qualities[quality]) return;
+            
+            currentQuality = quality;
+            updateQualityButtonState();
+            
+            // Reload stream with new quality
+            loadStream(channel.qualities[quality]);
+        }
+        
+        // Load stream
+        function loadStream(videoSrc) {
+            const video = document.getElementById('videoPlayer');
+            
+            // Destroy previous HLS instance
+            if (currentHls) {
+                currentHls.destroy();
+                currentHls = null;
+            }
+            
+            // Check if HLS stream
+            if (videoSrc.includes('.m3u8')) {
+                if (Hls.isSupported()) {
+                    currentHls = new Hls({
+                        enableWorker: true,
+                        lowLatencyMode: false,
+                        backBufferLength: 90
+                    });
+                    currentHls.loadSource(videoSrc);
+                    currentHls.attachMedia(video);
+                    currentHls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        video.play().catch(e => console.log('Autoplay prevented:', e));
+                    });
+                    currentHls.on(Hls.Events.ERROR, function(event, data) {
+                        if (data.fatal) {
+                            console.error('HLS Error:', data);
+                            showError('Lỗi phát stream: ' + data.type);
+                        }
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    // Native HLS support (Safari, iOS)
+                    video.src = videoSrc;
+                    video.addEventListener('loadedmetadata', function() {
+                        video.play().catch(e => console.log('Autoplay prevented:', e));
+                    });
+                } else {
+                    showError('Trình duyệt không hỗ trợ định dạng video này');
+                }
+            } else {
+                // Direct video URL
+                video.src = videoSrc;
+                video.play().catch(e => console.log('Autoplay prevented:', e));
+            }
+        }
+        
+        // Play channel
+        function playChannel(channelId) {
+            const channel = channels.find(c => c.id === channelId);
+            if (!channel) return;
+            
+            // Update UI
+            document.querySelectorAll('.channel-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-id="${channelId}"]`).classList.add('active');
+            document.getElementById('currentChannel').textContent = channel.name;
+            
+            currentChannelId = channelId;
+            
+            // Render quality buttons
+            renderQualityButtons(channel);
+            
+            // Play with selected quality (or first available)
+            if (currentQuality && channel.qualities[currentQuality]) {
+                loadStream(channel.qualities[currentQuality]);
+            } else {
+                const firstQuality = Object.keys(channel.qualities)[0];
+                currentQuality = firstQuality;
+                loadStream(channel.qualities[firstQuality]);
+                updateQualityButtonState();
+            }
+        }
+        
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = channels.filter(channel => 
+                channel.name.toLowerCase().includes(searchTerm)
+            );
+            renderChannels(filtered);
+            
+            // Re-highlight current channel if it's in filtered list
+            if (currentChannelId) {
+                const currentItem = document.querySelector(`[data-id="${currentChannelId}"]`);
+                if (currentItem) {
+                    currentItem.classList.add('active');
+                }
+            }
+        });
+        
+        // Show error message
+        function showError(message) {
+            const container = document.getElementById('channelContainer');
+            container.innerHTML = `<div class="error">${message}</div>`;
+        }
+        
+        // Initialize
+        loadChannels();
+    </script>
+</body>
+</html>
