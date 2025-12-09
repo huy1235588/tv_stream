@@ -1,1 +1,5 @@
 node_modules
+.m3u_cache
+vn.m3u
+python/urls.txt
+python/output.m3u
